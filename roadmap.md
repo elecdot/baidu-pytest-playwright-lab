@@ -110,19 +110,19 @@ Exit criteria:
 
 ## Stage 4: Geolocation And Mobile Smoke
 
-Status: planned.
+Status: complete.
 
-- [ ] Add geolocation tests using explicit browser context permissions and
+- [x] Add geolocation tests using explicit browser context permissions and
   mocked coordinates from `GEO_LOCATIONS`.
-- [ ] Add one mobile viewport smoke test with touch/mobile context settings.
-- [ ] Keep mobile and geolocation assertions limited to page stability and
+- [x] Add one mobile viewport smoke test with touch/mobile context settings.
+- [x] Keep mobile and geolocation assertions limited to page stability and
   visible handling.
 
 Exit criteria:
 
-- [ ] Geolocation smoke test passes or documents browser/environment limitation.
-- [ ] Mobile smoke test passes.
-- [ ] Report and screenshot artifacts are generated.
+- [x] Geolocation smoke test passes or documents browser/environment limitation.
+- [x] Mobile smoke test passes.
+- [x] Report and screenshot artifacts are generated.
 
 ## Stage 5: Evidence, Analysis, And Final Report
 
