@@ -50,6 +50,88 @@
 11. 结果页 URL：
    - 人工验证后浏览器进入 `https://map.baidu.com/search/%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6/@12931654.56,4855939.47,12z?querytype=s&da_src=shareurl&wd=%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6&c=131&src=0&pn=0&sug=0&l=12&b=(12918278.56,4802307.47;13000198.56,4848387.47)&from=webmap&biz_forward=%7B%22scaler%22:1,%22styles%22:%22pl%22%7D&device_ratio=1` 页面。
 
+## Route Entry Manual Observation
+
+Tool:
+
+- `uv run playwright codegen https://map.baidu.com`
+
+Environment:
+
+- Browser: Chrome for Testing
+- Mode: headed
+- URL: `https://map.baidu.com`
+
+Manual steps:
+
+1. 打开百度地图首页。
+2. 点击左侧搜索框旁边的路线入口按钮。
+3. 页面左侧出现路线规划面板。
+4. 面板顶部出现公交、驾车、步行、骑行等交通方式入口。
+5. 出现起点输入框。
+6. 出现终点输入框。
+
+Observed locators:
+
+- Route entry:
+  - `page.locator(".searchbox-content-button")`
+
+- Start input:
+  - `page.get_by_role("textbox", name="输入起点或在图区上选点")`
+
+- End input, initial state:
+  - `page.get_by_role("textbox", name="输入终点")`
+
+- End input, focused/expanded state:
+  - `page.get_by_role("textbox", name="输入终点或在图区上选点")`
+
+Stable assertions:
+
+- 路线面板出现后可以断言以下元素之一：
+  - `page.get_by_role("textbox", name="输入起点或在图区上选点")`
+  - `page.get_by_role("textbox", name="输入终点")`
+  - 页面文本包含 `公交`
+  - 页面文本包含 `驾车`
+  - 页面文本包含 `步行`
+  - 页面文本包含 `骑行`
+
+Decision:
+
+- Stage 3A 先实现 Route Panel Smoke。
+- 该测试只验证路线入口可点击、路线面板可打开、起点/终点输入框可见。
+- 暂不在 Stage 3A 中输入起点和终点。
+codegen:
+```python
+import re
+from playwright.sync_api import Playwright, sync_playwright, expect
+
+
+def run(playwright: Playwright) -> None:
+    browser = playwright.chromium.launch(headless=False)
+    context = browser.new_context()
+    page = context.new_page()
+    page.goto("https://map.baidu.com/@11590057.96,4489812.75,4z")
+    page.locator(".searchbox-content-button").click()
+    page.get_by_role("textbox", name="输入起点或在图区上选点").click()
+    page.get_by_role("textbox", name="输入终点").click()
+    page.get_by_role("textbox", name="输入起点或在图区上选点").click()
+    page.get_by_role("textbox", name="输入起点或在图区上选点").fill("")
+    page.get_by_role("textbox", name="输入起点或在图区上选点").click()
+    page.get_by_role("textbox", name="输入起点或在图区上选点").fill("北京大学")
+    page.get_by_role("textbox", name="输入起点或在图区上选点").press("Enter")
+    page.get_by_role("textbox", name="输入终点或在图区上选点").fill("北京大学xi")
+    page.get_by_text("北京大学-西门 北京市海淀区").click()
+    #出现对应信息
+
+    # ---------------------
+    context.close()
+    browser.close()
+
+
+with sync_playwright() as playwright:
+    run(playwright)
+```
+
 ## Candidate Locators
 
 - Search input:

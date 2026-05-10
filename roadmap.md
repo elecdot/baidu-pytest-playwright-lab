@@ -39,20 +39,23 @@ Exit criteria:
 - [x] `reports/report.html` is generated.
 - [x] `test-results/homepage.png` is generated.
 
-## Stage 2: Search Flow
+## Stage 2: Search Flow Under Anti-Automation Constraint
 
 Status: complete.
 
 - [x] Use Playwright codegen or manual exploration to confirm stable search
   locators.
 - [x] Extend `BaiduMapPage` with search-oriented helpers:
+  - `fill_search_input(keyword: str)`
+  - `expect_search_input_value(keyword: str)`
+  - `classify_search_suggestion_state(keyword: str)`
   - `search(keyword: str)`
-  - `expect_text_visible(text: str, timeout: int = 15_000)`
   - `expect_search_or_security_challenge_observed(keyword: str)`
   - `goto_url(url: str)`
-- [x] Add `tests/test_search.py` with a small first set:
-  - search submission classification for `北京大学`
-  - known result URL classification for the manually verified result URL.
+- [x] Add `tests/test_search.py` with three anti-automation-aware tests:
+  - search input accepts `北京大学`
+  - search suggestion state is classified instead of forced
+  - search result state is classified for submission and known result URL
 - [x] Treat either a search result or Baidu security challenge as an observed
   search outcome.
 - [x] Treat headless map URL navigation after Enter as an observed submission
@@ -68,23 +71,30 @@ Exit criteria:
   `test-results/`.
 - [x] `docs/locator_discovery_notes.md` records the security challenge boundary.
 
-## Stage 3: Route Planning Baseline
+## Stage 3: Route Panel Smoke
 
-Status: planned.
+Status: complete.
 
-- [ ] Use codegen to confirm route entry, start input, end input, and submit
-  locators.
-- [ ] Add route helpers to `BaiduMapPage` only after locator behavior is
-  observed.
-- [ ] Add a small route baseline test for one P0 route, such as 北京南站 to
-  天安门广场.
-- [ ] Avoid asserting exact duration, distance, price, or traffic state.
+- [x] Use codegen to confirm route entry, start input, and end input locators.
+- [x] Add route panel helpers to `BaiduMapPage`:
+  - `open_route_panel()`
+  - `expect_route_panel_open()`
+  - `route_entry`
+  - `route_start_input`
+  - `route_end_input`
+- [x] Add `tests/test_route.py` with `test_route_panel_can_be_opened`.
+- [x] Verify route entry is clickable and the route panel exposes start/end
+  inputs or transport-mode labels.
+- [x] Defer start/end entry and route result assertions to a later route-planning
+  stage because Stage 3A only covers panel smoke behavior.
 
 Exit criteria:
 
-- [ ] Route baseline passes in Chromium.
-- [ ] Failure artifacts are useful enough to diagnose locator instability.
-- [ ] Flaky behavior is recorded instead of hidden.
+- [x] Route panel smoke passes in Chromium.
+- [x] `test-results/route-panel-open.png` is generated.
+- [x] `docs/locator_discovery_notes.md` records the route entry boundary.
+- [x] No assertions depend on exact route duration, distance, price, or traffic
+  state.
 
 ## Stage 4: Geolocation And Mobile Smoke
 
