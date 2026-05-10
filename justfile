@@ -14,6 +14,9 @@ test:
 test-headed:
     uv run pytest --headed
 
+failure-demo:
+    uv run python scripts/failure_demo_generator.py
+
 ### Agent/workspace-safe
 ### Uses workspace-safe cache (`.cache/uv`) to comply with sandbox restrictions.
 ### See `./scripts/agent-env.sh` for details.
@@ -26,3 +29,6 @@ agent-format:
 
 agent-test:
     ./scripts/agent-env.sh uv run pytest
+
+agent-failure-demo:
+    ./scripts/agent-env.sh uv run python scripts/failure_demo_generator.py

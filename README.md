@@ -54,6 +54,8 @@ See each directory-level `README.md` before adding files in that directory.
 
 - [docs/design_book.md](docs/design_book.md) - Overall experimental design,
   scope, strategy, test cases, data, execution plan, risks, and report outline.
+- [docs/final_report.md](docs/final_report.md) - Final experiment report,
+  evidence summary, stability record, and analysis.
 - [roadmap.md](roadmap.md) - Staged implementation roadmap from smoke loop to
   final experiment report.
 
@@ -62,5 +64,5 @@ See each directory-level `README.md` before adding files in that directory.
 - [x] Implement the first Page Object in `pages/baidu_map_page.py`.
 - [x] Add structured test data in `data/test_data.py`.
 - [x] Add smoke tests before expanding search, route, geolocation, and mobile flows.
-- [ ] Confirm stable Baidu Map locators through Playwright codegen.
-- [ ] Keep `docs/design_book.md` synchronized as the executable suite evolves.
+- [x] Confirm stable Baidu Map locators through Playwright codegen.
+- [x] Keep `docs/design_book.md` synchronized as the executable suite evolves.

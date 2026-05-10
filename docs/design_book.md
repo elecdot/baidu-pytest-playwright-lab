@@ -48,6 +48,26 @@
 3. 将测试计划拆分为后续可逐步实现的 Page Object、测试数据和 pytest 用例。
 4. 暂不把半稳定 locator 作为最终实现提交；实际测试代码应在 codegen 探索后再落地。
 
+### 3.4 最终实现状态
+
+截至最终报告阶段，项目已经完成 8 个稳定自动化测试：
+
+1. 首页 smoke。
+2. 搜索输入。
+3. 反自动化约束下的搜索联想状态分类。
+4. 反自动化约束下的搜索结果状态分类。
+5. 路线面板 smoke。
+6. 驾车路线 baseline。
+7. 北京模拟定位 context smoke。
+8. 移动端 viewport smoke。
+
+最终测试不绕过百度安全验证。搜索流程将安全验证、URL 跳转、输入被清空等现象
+作为公开站点自动化中的可观察结果记录。路线测试只验证方案区域和路线细节区域
+出现，不断言实时分钟数、公里数、红绿灯数量、价格、路况或路线几何。
+
+最终报告见 `docs/final_report.md`，人工 locator 观察记录见
+`docs/locator_discovery_notes.md`。
+
 ---
 
 ## 4. 被测软件介绍
@@ -764,10 +784,9 @@ def test_search_response_time(page: Page):
    说明实验背景、选题原因、测试对象、工具选择。
 
 2. **测试工具环境建立**
-   重点写 uv、Python、pytest、Playwright、浏览器安装。
 
 3. **测试工具的功能和使用流程**
-   介绍 Playwright 的页面操作、locator、自动等待、截图、Trace、浏览器上下文、定位权限模拟。
+   介绍 Playwright 的页面操作、locator、自动等待、截图、Trace、浏览器上下文、定位权限模拟等。同时介绍 Pytest 作为辅助测试工具。
 
 4. **被测软件介绍**
    介绍百度地图 Web 端的搜索、路线、定位、地图交互。
@@ -779,7 +798,7 @@ def test_search_response_time(page: Page):
    放项目结构、核心代码、运行命令、截图、HTML 报告、Trace 分析。
 
 7. **总结**
-   总结 Playwright + pytest + uv 的优点、不足，以及和 JMeter/Wireshark 的互补关系。
+   总结 Playwright + pytest + uv 的优点、不足，以及和 JMeter/Wireshark/Postman 的互补关系。
 
 这和老师给的报告内容要求是对齐的。
 

@@ -9,6 +9,10 @@ commands documented in the repository root.
 - [design_book.md](design_book.md) - The primary experiment design document,
   covering goals, scope, test strategy, test data, test cases, evidence, risks,
   metrics, and report structure.
+- [final_report.md](final_report.md) - Final experiment report with execution
+  results, evidence paths, failure demo, stability record, and tool analysis.
+- [locator_discovery_notes.md](locator_discovery_notes.md) - Manual codegen and
+  locator observations used to justify resilient test design.
 
 ## Maintenance Rules
 

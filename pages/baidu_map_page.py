@@ -3,6 +3,9 @@
 from pathlib import Path
 
 from playwright.sync_api import (
+    Error as PlaywrightError,
+)
+from playwright.sync_api import (
     Locator,
     Page,
     expect,
@@ -21,10 +24,20 @@ class BaiduMapPage:
         self.page = page
 
     def goto(self) -> None:
-        self.page.goto(self.url, wait_until="domcontentloaded")
+        self.goto_url(self.url)
 
     def goto_url(self, url: str) -> None:
-        self.page.goto(url, wait_until="domcontentloaded")
+        last_error: Exception | None = None
+        for _ in range(3):
+            try:
+                self.page.goto(url, wait_until="domcontentloaded")
+                return
+            except PlaywrightError as error:
+                last_error = error
+                self.page.wait_for_timeout(1_000)
+
+        if last_error is not None:
+            raise last_error
 
     def expect_page_loaded(self) -> None:
         expect(self.page.locator("body")).to_be_visible()
@@ -163,8 +176,9 @@ class BaiduMapPage:
         route_plan = self.page.get_by_text("推荐路线").or_(
             self.page.get_by_text("方案2")
         )
-        route_metrics = self.page.get_by_text("分钟").or_(self.page.get_by_text("公里"))
-        return route_plan.or_(route_metrics).or_(self.page.get_by_text("红绿灯"))
+        return route_plan.or_(self.page.get_by_text("方案3")).or_(
+            self.page.get_by_text("红绿灯")
+        )
 
     @property
     def route_detail_indicator(self) -> Locator:
