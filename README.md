@@ -56,6 +56,8 @@ See each directory-level `README.md` before adding files in that directory.
   scope, strategy, test cases, data, execution plan, risks, and report outline.
 - [docs/final_report.md](docs/final_report.md) - Final experiment report,
   evidence summary, stability record, and analysis.
+- [reports/latex/README.md](reports/latex/README.md) - Full LaTeX engineering
+  experiment report project and build instructions.
 - [roadmap.md](roadmap.md) - Staged implementation roadmap from smoke loop to
   final experiment report.
 

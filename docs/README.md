@@ -13,6 +13,8 @@ commands documented in the repository root.
   results, evidence paths, failure demo, stability record, and tool analysis.
 - [locator_discovery_notes.md](locator_discovery_notes.md) - Manual codegen and
   locator observations used to justify resilient test design.
+- [../reports/latex/README.md](../reports/latex/README.md) - Full LaTeX
+  engineering experiment report project and build instructions.
 
 ## Maintenance Rules
 

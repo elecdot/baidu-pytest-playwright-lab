@@ -1,0 +1,578 @@
+\documentclass[UTF8,a4paper,12pt]{ctexart}
+
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{caption}
+
+\geometry{left=2.6cm,right=2.6cm,top=2.5cm,bottom=2.5cm}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+\setlist[itemize]{leftmargin=2em}
+\setlist[enumerate]{leftmargin=2em}
+\renewcommand{\arraystretch}{1.25}
+\graphicspath{{../../test-results/}}
+
+\lstdefinestyle{codestyle}{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  backgroundcolor=\color{gray!6},
+  rulecolor=\color{gray!45}
+}
+\lstset{style=codestyle}
+
+\title{\textbf{基于 Python Playwright 的百度地图 Web 自动化测试工程实验报告}}
+\author{Baidu Map Pytest Playwright Test Lab}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\begin{abstract}
+本实验围绕百度地图 Web 端构建了一套基于 Python Playwright、pytest、
+pytest-playwright 与 uv 的端到端自动化测试工程。实验覆盖首页加载、搜索流程、
+路线规划、定位权限、移动端视口、HTML 报告、截图、Trace 以及受控失败证据。
+由于百度地图属于公开复杂 Web 地图应用，实验特别关注动态 DOM、异步加载、地图
+瓦片渲染、反自动化安全验证、外部网络波动等真实约束。最终稳定套件包含 8 个
+测试用例，连续三轮重复执行均通过，最新记录为 8 passed in 37.68s。
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{概述}
+
+\subsection{实验背景}
+
+百度地图 Web 端是典型的复杂前端应用。与普通表单页面相比，地图类应用具有更
+多动态行为：地图瓦片按视口加载，搜索和路线结果依赖网络响应，页面包含广告、
+定位权限、复杂输入联想、地图拖拽缩放、路线方案切换等交互。此类系统适合作为
+现代 Web UI 自动化测试工具的实验对象。
+
+本实验选择 Playwright for Python 作为核心自动化工具，pytest 作为测试组织与
+执行框架，pytest-playwright 作为浏览器 fixture 与命令行参数支持，uv 作为
+Python 环境和依赖管理工具。实验目标不是对百度地图进行数据采集，也不是绕过
+公开站点安全验证，而是在真实公开网站约束下验证自动化测试工程的可执行性、
+可诊断性和可维护性。
+
+\subsection{实验目标}
+
+本实验的工程目标包括：
+
+\begin{itemize}
+  \item 搭建可复现的 Python Playwright 自动化测试工程。
+  \item 使用 Page Object Model 封装百度地图页面操作。
+  \item 使用 pytest 标记和 fixture 组织首页、搜索、路线、定位、移动端测试。
+  \item 使用 HTML 报告、截图和 Trace 形成可检查证据链。
+  \item 在不绕过安全验证的前提下记录公开站点反自动化约束。
+  \item 分析 Playwright 在复杂地图类 Web 应用测试中的优势与边界。
+\end{itemize}
+
+\subsection{测试对象与实验边界}
+
+被测对象为百度地图 Web 端，地址为：
+
+\begin{center}
+\url{https://map.baidu.com}
+\end{center}
+
+实验明确排除以下内容：
+
+\begin{itemize}
+  \item 不进行高频请求、批量采集、压力测试或安全扫描。
+  \item 不绕过滑块、图像旋转、扫码等百度安全验证。
+  \item 不验证地图数据的绝对准确性。
+  \item 不断言实时路线分钟数、公里数、红绿灯数量、价格、路况或路线几何。
+  \item 不测试百度地图移动 App，仅测试 Web 页面在移动视口下的基本可用性。
+\end{itemize}
+
+\section{测试工具环境建立}
+
+\subsection{工程环境}
+
+项目采用 uv 管理 Python 环境和依赖，当前工程配置位于 \path{pyproject.toml}。
+核心环境如下：
+
+\begin{table}[H]
+\centering
+\caption{实验工具链}
+\begin{tabular}{ll}
+\toprule
+工具 & 用途 \\
+\midrule
+Python 3.12 & 测试代码运行环境 \\
+uv & 虚拟环境、依赖和命令运行管理 \\
+Playwright for Python & 浏览器自动化核心能力 \\
+pytest & 测试用例组织、断言和执行 \\
+pytest-playwright & Playwright 浏览器 fixture 与 CLI 集成 \\
+pytest-html & 生成 HTML 测试报告 \\
+ruff & Python 静态检查与格式检查 \\
+pre-commit & 提交前基础质量检查 \\
+just & 项目常用命令封装 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{依赖和浏览器安装}
+
+项目初始化和浏览器安装命令如下：
+
+\begin{lstlisting}[language=bash]
+uv sync
+uv run playwright install
+\end{lstlisting}
+
+由于 Codex sandbox 中 uv 默认 cache 可能不可写，项目提供了
+\path{scripts/agent-env.sh}，通过 \texttt{UV\_CACHE\_DIR=.cache/uv} 将 cache
+重定向到工作区内。agent-safe 命令由 \path{justfile} 封装：
+
+\begin{lstlisting}[language=bash]
+just agent-ruff
+just agent-test
+just agent-failure-demo
+\end{lstlisting}
+
+\subsection{pytest 与 Playwright 配置}
+
+pytest 默认配置包括：
+
+\begin{itemize}
+  \item 测试目录：\path{tests}
+  \item 默认浏览器：Chromium
+  \item 失败时保留 Trace、截图和视频
+  \item Playwright 自动产物目录：\path{test-results/playwright}
+  \item HTML 报告路径：\path{reports/report.html}
+\end{itemize}
+
+项目使用如下 pytest mark 区分用例类型：
+
+\begin{table}[H]
+\centering
+\caption{pytest mark 设计}
+\begin{tabular}{ll}
+\toprule
+标记 & 含义 \\
+\midrule
+\texttt{smoke} & 核心冒烟检查 \\
+\texttt{search} & 百度地图搜索流程 \\
+\texttt{route} & 路线规划流程 \\
+\texttt{geo} & 定位权限和模拟坐标 \\
+\texttt{mobile} & 移动端视口测试 \\
+\texttt{slow} & 可能受网络或地图加载影响较大的测试 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{测试工具的功能和使用流程}
+
+\subsection{Playwright 页面操作与 Locator}
+
+Playwright 通过 \texttt{Page} 对象驱动浏览器页面。项目中将直接页面操作封装在
+\texttt{BaiduMapPage} 中，测试用例只表达业务流程。例如首页测试只需要执行：
+
+\begin{lstlisting}[language=Python]
+baidu_map.goto()
+baidu_map.expect_page_loaded()
+baidu_map.screenshot("homepage")
+\end{lstlisting}
+
+Locator 选择优先使用 role、文本、placeholder 等语义信息。例如搜索输入框使用：
+
+\begin{lstlisting}[language=Python]
+page.get_by_role("textbox", name="搜地点、查公交、找路线")
+\end{lstlisting}
+
+路线入口和路线输入框则根据人工 codegen 观察确定：
+
+\begin{lstlisting}[language=Python]
+page.locator(".searchbox-content-button")
+page.get_by_role("textbox", name="输入起点或在图区上选点")
+page.get_by_role("textbox", name="输入终点")
+\end{lstlisting}
+
+\subsection{自动等待与弹性断言}
+
+Playwright 的 \texttt{expect(locator).to\_be\_visible()} 会自动等待元素达到目标
+状态。对公开地图应用而言，断言不能过于精确。本实验采用如下策略：
+
+\begin{itemize}
+  \item 首页只断言 body 可见。
+  \item 搜索流程不强制断言最终结果页必定出现，而是分类记录结果、安全验证、
+  URL 跳转、输入被清空等可观察状态。
+  \item 路线规划只断言路线方案区域和路线细节区域出现，不断言实时数值。
+  \item geolocation 与 mobile 只验证页面稳定可打开。
+\end{itemize}
+
+\subsection{截图、Trace 与 HTML 报告}
+
+项目通过 \texttt{BaiduMapPage.screenshot()} 将关键证据写入
+\path{test-results/}。pytest-playwright 负责在失败时保留 Trace、截图和视频；
+pytest-html 负责生成 \path{reports/report.html}。
+
+受控失败证据由以下命令生成：
+
+\begin{lstlisting}[language=bash]
+just agent-failure-demo
+\end{lstlisting}
+
+Trace 查看方式如下：
+
+\begin{lstlisting}[language=bash]
+uv run playwright show-trace \
+  test-results/failure-demo/failure-demo-trace.zip
+\end{lstlisting}
+
+\subsection{Browser Context、定位权限与移动端}
+
+Playwright Browser Context 允许每个测试使用独立的权限、定位、语言、时区和视口。
+本实验使用 context 模拟北京定位：
+
+\begin{lstlisting}[language=Python]
+browser.new_context(
+    geolocation=GEO_LOCATIONS["beijing"],
+    permissions=["geolocation"],
+    locale="zh-CN",
+    timezone_id="Asia/Shanghai",
+)
+\end{lstlisting}
+
+移动端 smoke 使用 393 x 852 viewport，并开启 \texttt{is\_mobile} 和
+\texttt{has\_touch}，用于验证百度地图 Web 页面在移动视口下可以稳定打开。
+
+\subsection{pytest 作为辅助测试工具}
+
+pytest 负责测试发现、用例组织、mark 管理和报告输出。项目按照功能拆分为：
+
+\begin{itemize}
+  \item \path{tests/test_home.py}
+  \item \path{tests/test_search.py}
+  \item \path{tests/test_route.py}
+  \item \path{tests/test_geolocation.py}
+  \item \path{tests/test_mobile.py}
+\end{itemize}
+
+\section{被测软件介绍}
+
+百度地图 Web 端提供搜索、路线、定位、地图浏览和图层切换等能力。本实验重点关注
+以下模块：
+
+\begin{longtable}{p{0.22\linewidth}p{0.68\linewidth}}
+\caption{被测功能模块} \\
+\toprule
+模块 & 特征 \\
+\midrule
+\endfirsthead
+\toprule
+模块 & 特征 \\
+\midrule
+\endhead
+首页加载 & 打开地图首页，加载搜索框、地图区域和基础控件。 \\
+搜索 & 输入地点关键词，触发联想、搜索提交、安全验证或地图跳转。 \\
+路线规划 & 打开路线面板，选择驾车模式，输入起点和终点并生成路线方案。 \\
+定位 & 浏览器请求或模拟 geolocation 权限，页面需稳定处理定位上下文。 \\
+移动端视口 & 在移动 viewport 和 touch context 下验证页面可打开。 \\
+地图交互 & 地图瓦片、缩放、拖拽、右侧广告卡片和动态 UI 共同影响自动化稳定性。 \\
+\bottomrule
+\end{longtable}
+
+百度地图页面存在明显的反自动化与安全验证机制。人工 codegen 观察显示，提交搜索
+可能触发“百度安全验证”和“请完成下方验证后继续操作”，验证方式包括图像旋转、
+滑块和扫码验证。实验不绕过这些机制，而是将其作为测试观察结果。
+
+\section{测试计划与测试用例设计}
+
+\subsection{测试范围}
+
+本实验最终实现了 8 个稳定用例，覆盖首页、搜索、路线、定位和移动端。
+
+\begin{table}[H]
+\centering
+\caption{稳定测试套件组成}
+\begin{tabular}{lll}
+\toprule
+模块 & 用例数 & 说明 \\
+\midrule
+首页 smoke & 1 & 首页可打开并截图 \\
+搜索流程 & 3 & 输入、联想状态分类、结果状态分类 \\
+路线规划 & 2 & 路线面板 smoke、驾车路线 baseline \\
+定位权限 & 1 & 北京 geolocation context smoke \\
+移动端 & 1 & 移动 viewport smoke \\
+\midrule
+合计 & 8 & 最新稳定运行全部通过 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{测试数据}
+
+测试数据集中维护在 \path{data/test_data.py}：
+
+\begin{itemize}
+  \item 搜索关键词：天安门广场、北京大学、清华大学、北京南站等。
+  \item 异常输入：空字符串、特殊字符、不存在地点字符串。
+  \item 路线用例：北京南站到天安门广场、北京大学到清华大学等。
+  \item 定位坐标：北京、上海、广州的公开城市中心坐标。
+\end{itemize}
+
+最终稳定路线 baseline 使用：
+
+\begin{center}
+北京南站 $\rightarrow$ 天安门广场
+\end{center}
+
+\subsection{用例设计}
+
+\begin{longtable}{p{0.16\linewidth}p{0.16\linewidth}p{0.58\linewidth}}
+\caption{最终自动化用例} \\
+\toprule
+用例编号 & mark & 验证目标 \\
+\midrule
+\endfirsthead
+\toprule
+用例编号 & mark & 验证目标 \\
+\midrule
+\endhead
+TC-HOME-001 & smoke & 首页 body 可见并生成截图，对应
+\path{tests/test_home.py}。 \\
+TC-SEARCH-001 & search & 搜索框接受“北京大学”输入。 \\
+TC-SEARCH-002 & search & 对联想、输入保留、输入清空、安全验证等状态分类。 \\
+TC-SEARCH-003 & search & 对搜索提交和已知结果 URL 的结果状态分类。 \\
+TC-ROUTE-001 & route & 路线入口可打开路线面板。 \\
+TC-ROUTE-002 & route & 驾车路线 baseline 出现方案和步骤详情。 \\
+TC-GEO-001 & geo & 北京模拟定位上下文可以打开地图。 \\
+TC-MOBILE-001 & mobile & 移动端视口可以打开地图。 \\
+\bottomrule
+\end{longtable}
+
+完整 pytest 函数名保留在 \path{tests/} 目录中，报告正文使用用例编号提高表格
+可读性。
+
+\subsection{反自动化约束下的分类断言}
+
+搜索流程不把“出现百度安全验证”视为自动化失败，因为这是公开站点的正常保护
+机制。搜索测试的分类结果包括：
+
+\begin{itemize}
+  \item \texttt{suggestion}：出现搜索联想。
+  \item \texttt{security\_challenge}：出现百度安全验证。
+  \item \texttt{map\_navigation}：headless 下提交后发生地图 URL 跳转。
+  \item \texttt{input\_cleared}：输入被页面清空。
+  \item \texttt{input\_retained\_without\_suggestion}：输入保留但无联想。
+  \item \texttt{partial\_input\_retained}：只保留部分输入。
+\end{itemize}
+
+\section{测试工具的应用}
+
+\subsection{项目结构}
+
+项目核心目录如下：
+
+\begin{lstlisting}[language=bash]
+data/              # 测试数据
+docs/              # 设计书、最终报告、locator 观察
+pages/             # Page Object
+reports/           # pytest-html 报告和 LaTeX 报告工程
+scripts/           # agent-safe uv wrapper、失败证据脚本
+test-results/      # 截图、trace、失败证据
+tests/             # pytest 用例
+\end{lstlisting}
+
+\subsection{核心代码}
+
+页面操作集中在 \texttt{BaiduMapPage}。例如路线规划 baseline 使用以下 Page
+Object 方法：
+
+\begin{lstlisting}[language=Python]
+def plan_drive_route(self, start: str, end: str) -> None:
+    self.open_route_panel()
+    self.drive_mode_tab.click()
+    self.route_start_input.click()
+    self.route_start_input.press_sequentially(start, delay=120)
+    self.route_start_input.press("Enter")
+    route_end_input = self.route_end_input.first
+    route_end_input.click()
+    route_end_input.press_sequentially(end, delay=120)
+    route_end_input.press("Enter")
+\end{lstlisting}
+
+稳定性修复中，页面导航增加了最多 3 次重试，用于缓解公开站点偶发
+\texttt{net::ERR\_NETWORK\_CHANGED}：
+
+\begin{lstlisting}[language=Python]
+def goto_url(self, url: str) -> None:
+    last_error = None
+    for _ in range(3):
+        try:
+            self.page.goto(url, wait_until="domcontentloaded")
+            return
+        except PlaywrightError as error:
+            last_error = error
+            self.page.wait_for_timeout(1000)
+    raise last_error
+\end{lstlisting}
+
+\subsection{运行命令}
+
+常用执行命令：
+
+\begin{lstlisting}[language=bash]
+just agent-ruff
+just agent-test
+just agent-failure-demo
+\end{lstlisting}
+
+报告编译命令：
+
+\begin{lstlisting}[language=bash]
+cd reports/latex
+make pdf
+\end{lstlisting}
+
+\subsection{执行结果}
+
+最终稳定套件最新结果：
+
+\begin{lstlisting}
+8 passed in 37.68s
+\end{lstlisting}
+
+连续三轮重复执行结果：
+
+\begin{table}[H]
+\centering
+\caption{重复执行稳定性}
+\begin{tabular}{lll}
+\toprule
+轮次 & 结果 & 耗时 \\
+\midrule
+1 & 8 passed & 39.94s \\
+2 & 8 passed & 41.30s \\
+3 & 8 passed & 37.68s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+重复执行前曾发现两个稳定性问题：一次网络变化导致导航失败，一次路线结果断言被
+地图比例尺中的“公里”误触发。修复后连续三次通过，说明当前稳定套件具备基本
+可重复执行能力。
+
+\subsection{截图证据}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{homepage.png}
+\caption{首页 smoke 截图}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{search-input-keyword.png}
+\caption{搜索输入截图}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{search-known-result-page-security_challenge.png}
+\caption{已知搜索结果 URL 触发百度安全验证}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{route-result-beijing_south_to_tiananmen.png}
+\caption{驾车路线方案区域}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{route-detail-beijing_south_to_tiananmen.png}
+\caption{驾车路线细节步骤}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{geolocation-beijing.png}
+\caption{北京模拟定位上下文}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\linewidth]{mobile-homepage.png}
+\caption{移动端视口 smoke}
+\end{figure}
+
+\subsection{HTML 报告与失败 Trace}
+
+HTML 报告路径为：
+
+\begin{center}
+\path{reports/report.html}
+\end{center}
+
+受控失败证据路径为：
+
+\begin{itemize}
+  \item \path{test-results/failure-demo/failure-demo-missing-text.png}
+  \item \path{test-results/failure-demo/failure-demo-trace.zip}
+  \item \path{test-results/failure-demo/failure-summary.txt}
+\end{itemize}
+
+该失败演示故意等待不存在的文本，用来展示 Playwright 在失败时提供的截图和
+Trace 诊断能力。该失败不属于稳定 pytest 套件，不影响 8 个稳定用例的通过率。
+
+\section{总结}
+
+\subsection{Playwright、pytest 与 uv 的优点}
+
+\begin{itemize}
+  \item Playwright 的 Locator、自动等待、Browser Context、截图和 Trace 能力
+  适合复杂 Web UI 的端到端验证。
+  \item pytest 提供了清晰的用例组织、mark 分类、fixture 复用和 HTML 报告扩展。
+  \item uv 提供了快速、可复现的 Python 依赖和命令运行环境。
+  \item Page Object Model 降低了测试用例与页面细节的耦合。
+\end{itemize}
+
+\subsection{不足与经验}
+
+\begin{itemize}
+  \item 公开地图站点存在安全验证，完整搜索流程不能强行自动化。
+  \item Headed 和 headless 行为存在差异，例如搜索联想和路线候选项表现不同。
+  \item 外部网络波动会影响端到端测试稳定性，需要重试和失败证据。
+  \item 地图瓦片、实时路况、路线时长等动态数据不适合精确断言。
+\end{itemize}
+
+\subsection{与 JMeter、Wireshark、Postman 的互补关系}
+
+Playwright 关注用户视角的浏览器端流程，适合验证页面交互和端到端用户路径。
+JMeter 更适合接口或服务端压力测试；Wireshark 更适合网络抓包和协议层分析；
+Postman 更适合 API 调试、接口集合管理和接口回归测试。对于复杂 Web 应用，四类
+工具并非替代关系，而是覆盖不同测试层次：Playwright 验证真实浏览器行为，
+Postman 验证接口契约，JMeter 验证负载能力，Wireshark 分析网络通信细节。
+
+\subsection{最终结论}
+
+本实验完成了一套可执行、可诊断、可复现的百度地图 Web 自动化测试工程。最终
+稳定套件覆盖首页、搜索、路线、定位和移动端，形成 HTML 报告、截图和 Trace
+证据。实验表明，Python Playwright + pytest + uv 适合复杂地图类 Web 应用的
+工程化自动化测试，但测试设计必须尊重公开站点安全边界，避免高频请求和过度
+精确断言。
+
+\end{document}

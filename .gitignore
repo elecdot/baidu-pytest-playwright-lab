@@ -23,6 +23,16 @@ outputs/*
 !outputs/README.md
 reports/*
 !reports/README.md
+!reports/latex/
+!reports/latex/**
+reports/latex/main.pdf
+reports/latex/*.aux
+reports/latex/*.fls
+reports/latex/*.fdb_latexmk
+reports/latex/*.log
+reports/latex/*.out
+reports/latex/*.toc
+reports/latex/*.xdv
 test-results/*
 !test-results/README.md
 
