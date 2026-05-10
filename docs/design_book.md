@@ -127,6 +127,7 @@ addopts = [
     "--tracing=retain-on-failure",
     "--screenshot=only-on-failure",
     "--video=retain-on-failure",
+    "--output=test-results/playwright",
     "--html=reports/report.html",
     "--self-contained-html",
 ]
@@ -140,6 +141,7 @@ addopts = [
 | `--tracing=retain-on-failure`  | 失败时保留 Trace    |
 | `--screenshot=only-on-failure` | 失败时截图          |
 | `--video=retain-on-failure`    | 失败时保留视频        |
+| `--output=test-results/playwright` | 存放 Playwright 自动产物 |
 | `--html=reports/report.html`   | 生成 HTML 报告     |
 
 默认配置不启用 `--headed`，这样测试可以在无桌面环境和 CI 环境中运行。课堂演示需要显示浏览器窗口时，使用 `just test-headed` 或在 pytest 命令后追加 `--headed`。

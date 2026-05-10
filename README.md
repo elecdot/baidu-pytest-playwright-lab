@@ -57,8 +57,8 @@ See each directory-level `README.md` before adding files in that directory.
 
 ## Open Loops
 
-- [ ] Implement the first Page Object in `pages/baidu_map_page.py`.
-- [ ] Add structured test data in `data/test_data.py`.
-- [ ] Add smoke tests before expanding search, route, geolocation, and mobile flows.
+- [x] Implement the first Page Object in `pages/baidu_map_page.py`.
+- [x] Add structured test data in `data/test_data.py`.
+- [x] Add smoke tests before expanding search, route, geolocation, and mobile flows.
 - [ ] Confirm stable Baidu Map locators through Playwright codegen.
 - [ ] Keep `docs/design_book.md` synchronized as the executable suite evolves.
