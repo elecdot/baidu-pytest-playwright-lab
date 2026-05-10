@@ -54,6 +54,8 @@ See each directory-level `README.md` before adding files in that directory.
 
 - [docs/design_book.md](docs/design_book.md) - Overall experimental design,
   scope, strategy, test cases, data, execution plan, risks, and report outline.
+- [roadmap.md](roadmap.md) - Staged implementation roadmap from smoke loop to
+  final experiment report.
 
 ## Open Loops
 
