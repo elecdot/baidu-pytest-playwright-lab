@@ -17,6 +17,10 @@ INVALID_KEYWORDS = [
     "abcdefg不存在地点12345",
 ]
 
+KNOWN_SEARCH_RESULT_PAGES = {
+    "北京大学": "https://map.baidu.com/search/%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6/@12931654.56,4855939.47,12z?querytype=s&da_src=shareurl&wd=%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A6&c=131&src=0&pn=0&sug=0&l=12&b=(12918278.56,4802307.47;13000198.56,4848387.47)&from=webmap&biz_forward=%7B%22scaler%22:1,%22styles%22:%22pl%22%7D&device_ratio=1",
+}
+
 ROUTE_CASES = [
     {
         "name": "beijing_south_to_tiananmen",

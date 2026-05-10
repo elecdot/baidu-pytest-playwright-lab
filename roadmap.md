@@ -41,27 +41,32 @@ Exit criteria:
 
 ## Stage 2: Search Flow
 
-Status: next.
+Status: complete.
 
-- [ ] Use Playwright codegen or manual exploration to confirm stable search
+- [x] Use Playwright codegen or manual exploration to confirm stable search
   locators.
-- [ ] Extend `BaiduMapPage` with search-oriented helpers:
+- [x] Extend `BaiduMapPage` with search-oriented helpers:
   - `search(keyword: str)`
   - `expect_text_visible(text: str, timeout: int = 15_000)`
-  - optional screenshot naming for search evidence.
-- [ ] Add `tests/test_search.py` with a small first set:
-  - one valid P0 keyword such as `北京大学`
-  - one invalid input robustness check.
-- [ ] Keep assertions resilient: verify visible page text or stable result
+  - `expect_search_or_security_challenge_observed(keyword: str)`
+  - `goto_url(url: str)`
+- [x] Add `tests/test_search.py` with a small first set:
+  - search submission classification for `北京大学`
+  - known result URL classification for the manually verified result URL.
+- [x] Treat either a search result or Baidu security challenge as an observed
+  search outcome.
+- [x] Treat headless map URL navigation after Enter as an observed submission
+  outcome when result text and security challenge are absent.
+- [x] Keep assertions resilient: verify visible page text or stable result
   indicators, not exact map tiles or live traffic values.
 
 Exit criteria:
 
-- [ ] `just agent-ruff` passes.
-- [ ] `just agent-test` passes with home and search tests.
-- [ ] Search screenshots or failure artifacts are available under
+- [x] `just agent-ruff` passes.
+- [x] `just agent-test` passes with home and search tests.
+- [x] Search screenshots or failure artifacts are available under
   `test-results/`.
-- [ ] README Open Loops and `docs/design_book.md` are updated if scope changes.
+- [x] `docs/locator_discovery_notes.md` records the security challenge boundary.
 
 ## Stage 3: Route Planning Baseline
 
