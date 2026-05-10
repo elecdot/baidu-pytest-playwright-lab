@@ -110,9 +110,33 @@ class BaiduMapPage:
     def expect_route_panel_open(self, timeout: int = 15_000) -> None:
         expect(self.route_panel_indicator.first).to_be_visible(timeout=timeout)
 
+    def plan_drive_route(self, start: str, end: str) -> None:
+        self.open_route_panel()
+        self.drive_mode_tab.click()
+        self.route_start_input.click()
+        self.route_start_input.press_sequentially(start, delay=120)
+        self.route_start_input.press("Enter")
+        route_end_input = self.route_end_input.first
+        route_end_input.click()
+        route_end_input.press_sequentially(end, delay=120)
+        route_end_input.press("Enter")
+
+    def expect_route_results_visible(self, timeout: int = 20_000) -> None:
+        expect(self.route_result_indicator.first).to_be_visible(timeout=timeout)
+
+    def open_first_route_detail(self) -> None:
+        self.page.get_by_text("分钟").first.click()
+
+    def expect_route_detail_visible(self, timeout: int = 10_000) -> None:
+        expect(self.route_detail_indicator.first).to_be_visible(timeout=timeout)
+
     @property
     def route_entry(self) -> Locator:
         return self.page.locator(".searchbox-content-button")
+
+    @property
+    def drive_mode_tab(self) -> Locator:
+        return self.page.locator(".tab-item.drive-tab")
 
     @property
     def route_start_input(self) -> Locator:
@@ -133,6 +157,18 @@ class BaiduMapPage:
             self.page.get_by_text("骑行")
         )
         return self.route_start_input.or_(self.route_end_input).or_(transport_mode)
+
+    @property
+    def route_result_indicator(self) -> Locator:
+        route_plan = self.page.get_by_text("推荐路线").or_(
+            self.page.get_by_text("方案2")
+        )
+        route_metrics = self.page.get_by_text("分钟").or_(self.page.get_by_text("公里"))
+        return route_plan.or_(route_metrics).or_(self.page.get_by_text("红绿灯"))
+
+    @property
+    def route_detail_indicator(self) -> Locator:
+        return self.page.get_by_text("进入").or_(self.page.get_by_text("行驶"))
 
     @property
     def security_challenge_indicator(self) -> Locator:

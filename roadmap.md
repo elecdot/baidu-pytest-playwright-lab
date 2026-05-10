@@ -71,28 +71,40 @@ Exit criteria:
   `test-results/`.
 - [x] `docs/locator_discovery_notes.md` records the security challenge boundary.
 
-## Stage 3: Route Panel Smoke
+## Stage 3: Route Planning Baseline
 
 Status: complete.
 
-- [x] Use codegen to confirm route entry, start input, and end input locators.
-- [x] Add route panel helpers to `BaiduMapPage`:
+- [x] Use codegen to confirm route entry, drive mode, start input, end input,
+  and route result locators.
+- [x] Add route helpers to `BaiduMapPage`:
   - `open_route_panel()`
   - `expect_route_panel_open()`
+  - `plan_drive_route(start: str, end: str)`
+  - `expect_route_results_visible()`
+  - `open_first_route_detail()`
+  - `expect_route_detail_visible()`
   - `route_entry`
   - `route_start_input`
   - `route_end_input`
-- [x] Add `tests/test_route.py` with `test_route_panel_can_be_opened`.
+- [x] Add `tests/test_route.py` with:
+  - `test_route_panel_can_be_opened`
+  - `test_drive_route_planning_baseline`
 - [x] Verify route entry is clickable and the route panel exposes start/end
   inputs or transport-mode labels.
-- [x] Defer start/end entry and route result assertions to a later route-planning
-  stage because Stage 3A only covers panel smoke behavior.
+- [x] Plan one drive route baseline: 北京南站 to 天安门广场.
+- [x] Verify route scheme area and route detail steps appear.
+- [x] Do not assert exact duration, distance, red-light count, price, traffic
+  state, or route geometry.
 
 Exit criteria:
 
 - [x] Route panel smoke passes in Chromium.
+- [x] Drive route baseline passes in Chromium.
 - [x] `test-results/route-panel-open.png` is generated.
-- [x] `docs/locator_discovery_notes.md` records the route entry boundary.
+- [x] Route result and detail screenshots are generated.
+- [x] `docs/locator_discovery_notes.md` records the route entry and route
+  baseline boundaries.
 - [x] No assertions depend on exact route duration, distance, price, or traffic
   state.
 

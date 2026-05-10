@@ -131,6 +131,101 @@ def run(playwright: Playwright) -> None:
 with sync_playwright() as playwright:
     run(playwright)
 ```
+## Route Planning Baseline Manual Observation
+
+Tool:
+
+- `uv run playwright codegen https://map.baidu.com`
+
+Route case:
+
+- Mode: 驾车
+- Start: 北京南站
+- End: 天安门广场
+
+Manual steps:
+
+1. 打开百度地图首页。
+2. 点击路线入口。
+3. 点击“驾车”模式。
+4. 在起点输入框输入“北京南站”。
+5. 点击候选项“北京南站 北京市丰台区”。
+6. 在终点输入框输入“天安门广场”。
+7. 点击候选项“天安门广场 北京市东城区”。
+8. 点击终点候选项后，页面自动生成路线方案，不需要额外点击搜索按钮或按 Enter。
+9. 页面左侧出现推荐路线、方案2、方案3等路线方案。
+10. 点击具体方案后，出现路线细节步骤，例如“进入南站北环路，行驶240米”。
+
+Observed locators:
+
+- Route entry:
+  - `page.locator(".searchbox-content-button")`
+
+- Drive mode:
+  - `page.locator(".tab-item.drive-tab")`
+
+- Start input:
+  - `page.get_by_role("textbox", name="输入起点或在图区上选点")`
+
+- Start suggestion:
+  - `page.get_by_text("北京南站 北京市丰台区")`
+
+- End input:
+  - `page.get_by_role("textbox", name="输入终点或在图区上选点")`
+
+- End suggestion:
+  - `page.get_by_text("天安门广场 北京市东城区")`
+
+Route result indicators:
+
+- `page.get_by_text("推荐路线")`
+- `page.get_by_text("方案2")`
+- `page.get_by_text("方案3")`
+- text matching `分钟`
+- text matching `公里`
+- text matching `红绿灯`
+
+Route detail indicators:
+
+- text matching `进入`
+- text matching `行驶`
+
+Decision:
+
+- Stage 3B 可以实现完整路线规划 baseline。
+- 终点候选项点击后会自动触发路线规划，因此不需要单独提交按钮。
+- 正式测试不应断言精确的分钟数、公里数、红绿灯数量。
+- 正式测试只验证路线方案区域和路线细节区域出现。
+codegen:
+```python
+import re
+from playwright.sync_api import Playwright, sync_playwright, expect
+
+
+def run(playwright: Playwright) -> None:
+    browser = playwright.chromium.launch(headless=False)
+    context = browser.new_context()
+    page = context.new_page()
+    page.goto("https://map.baidu.com/@11590057.96,4489812.75,4z")
+    page.locator(".searchbox-content-button").click()
+    page.locator(".tab-item.drive-tab").click()
+    page.get_by_role("textbox", name="输入起点或在图区上选点").click()
+    page.get_by_role("textbox", name="输入起点或在图区上选点").fill("北京南站")
+    page.get_by_text("北京南站 北京市丰台区").click()
+    page.get_by_role("textbox", name="输入终点或在图区上选点").click()
+    page.get_by_role("textbox", name="输入终点或在图区上选点").fill("天安门广场")
+    page.get_by_text("天安门广场 北京市东城区").click()
+    page.get_by_text("分钟9.2公里27个红绿灯").click()
+    page.get_by_text("进入南站北环路，行驶240米").first.click()
+
+    # ---------------------
+    context.close()
+    browser.close()
+
+
+with sync_playwright() as playwright:
+    run(playwright)
+```
 
 ## Candidate Locators
 
