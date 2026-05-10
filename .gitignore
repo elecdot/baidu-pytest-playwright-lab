@@ -21,9 +21,16 @@ wheels/
 *.err
 outputs/*
 !outputs/README.md
+reports/*
+!reports/README.md
+test-results/*
+!test-results/README.md
 
 # Codex local state
 .codex
+
+# Workspace-local tool caches
+.cache/
 
 # Large Binary Files
 *.bin

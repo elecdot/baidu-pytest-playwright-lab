@@ -39,6 +39,15 @@
 10. 生成截图、Trace、HTML 报告等实验结果证据。
 11. 分析 Playwright 在复杂地图类 Web 应用测试中的优势和局限。
 
+### 3.3 当前初始化阶段目标
+
+当前项目处于工程初始化阶段，本阶段先完成以下工作：
+
+1. 明确项目 README、目录 README 和设计书之间的职责边界。
+2. 固化目录结构、运行命令、测试证据目录和文档维护规则。
+3. 将测试计划拆分为后续可逐步实现的 Page Object、测试数据和 pytest 用例。
+4. 暂不把半稳定 locator 作为最终实现提交；实际测试代码应在 codegen 探索后再落地。
+
 ---
 
 ## 4. 被测软件介绍
@@ -107,14 +116,13 @@ Web 地图服务、位置服务、出行路线服务。
 
 ## 6. pyproject.toml 设计
 
-示例：
+计划配置示例：
 
 ```toml
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = [
     "-v",
-    "--headed",
     "--browser=chromium",
     "--tracing=retain-on-failure",
     "--screenshot=only-on-failure",
@@ -128,14 +136,19 @@ addopts = [
 
 | 参数                             | 作用             |
 | ------------------------------ | -------------- |
-| `--headed`                     | 显示浏览器窗口，适合课堂演示 |
 | `--browser=chromium`           | 默认使用 Chromium  |
 | `--tracing=retain-on-failure`  | 失败时保留 Trace    |
 | `--screenshot=only-on-failure` | 失败时截图          |
 | `--video=retain-on-failure`    | 失败时保留视频        |
 | `--html=reports/report.html`   | 生成 HTML 报告     |
 
+默认配置不启用 `--headed`，这样测试可以在无桌面环境和 CI 环境中运行。课堂演示需要显示浏览器窗口时，使用 `just test-headed` 或在 pytest 命令后追加 `--headed`。
+
 Playwright Trace Viewer 可以回放测试过程，查看每一步操作时页面发生了什么，适合调试失败用例。([Playwright][5])
+
+当前仓库已经在 `pyproject.toml` 中声明 `pytest`、`pytest-playwright`、
+`pytest-html`、`playwright`、`ruff` 和 `pre-commit` 等开发依赖。后续实现测试
+代码时，应同步补齐 pytest 默认配置，避免文档和实际命令出现偏差。
 
 ---
 
@@ -278,18 +291,18 @@ INVALID_KEYWORDS = [
 
 | 编号         | 用例名称   | 配置                | 预期结果      | 优先级 |
 | ---------- | ------ | ----------------- | --------- | --- |
-| TC-GEO-001 | 允许定位   | 授予 geolocation 权限 | 页面可处理当前位置 |     |
-| TC-GEO-002 | 拒绝定位   | 不授予权限             | 页面不崩溃，有提示 |     |
-| TC-GEO-003 | 模拟北京坐标 | 设置北京经纬度           | 页面定位到北京附近 |     |
-| TC-GEO-004 | 模拟上海坐标 | 设置上海经纬度           | 页面定位到上海附近 |     |
+| TC-GEO-001 | 允许定位   | 授予 geolocation 权限 | 页面可处理当前位置 | P1  |
+| TC-GEO-002 | 拒绝定位   | 不授予权限             | 页面不崩溃，有提示 | P1  |
+| TC-GEO-003 | 模拟北京坐标 | 设置北京经纬度           | 页面定位到北京附近 | P1  |
+| TC-GEO-004 | 模拟上海坐标 | 设置上海经纬度           | 页面定位到上海附近 | P2  |
 
 ### 9.6 移动端测试用例
 
 | 编号            | 用例名称  | 配置                    | 预期结果    | 优先级 |
 | ------------- | ----- | --------------------- | ------- | --- |
-| TC-MOBILE-001 | 移动端首页 | Pixel 5 视口            | 页面可打开   |     |
-| TC-MOBILE-002 | 移动端搜索 | Pixel 5 视口            | 搜索功能可完成 |     |
-| TC-MOBILE-003 | 移动端定位 | Pixel 5 + geolocation | 定位流程可处理 |     |
+| TC-MOBILE-001 | 移动端首页 | Pixel 5 视口            | 页面可打开   | P1  |
+| TC-MOBILE-002 | 移动端搜索 | Pixel 5 视口            | 搜索功能可完成 | P1  |
+| TC-MOBILE-003 | 移动端定位 | Pixel 5 + geolocation | 定位流程可处理 | P2  |
 
 ---
 
@@ -571,6 +584,18 @@ uv 负责管理环境和运行命令
 uv run pytest
 ```
 
+仓库也提供了 `just` 快捷命令：
+
+```bash
+just test
+```
+
+在 Codex 等受限 sandbox 中，优先使用 workspace-safe cache 包装命令：
+
+```bash
+just agent-test
+```
+
 ### 14.2 只运行首页测试
 
 ```bash
@@ -586,6 +611,12 @@ uv run pytest tests/test_search.py
 ### 14.4 使用 Chromium 有头模式运行
 
 ```bash
+just test-headed
+```
+
+或直接使用 pytest 参数：
+
+```bash
 uv run pytest --browser chromium --headed
 ```
 
@@ -593,14 +624,16 @@ Playwright Python 的 pytest 插件支持通过 pytest CLI 指定浏览器和 he
 
 ### 14.5 查看 HTML 报告
 
-```bash
-start reports/report.html
-```
-
 WSL/Linux：
 
 ```bash
 xdg-open reports/report.html
+```
+
+Windows PowerShell：
+
+```powershell
+start reports/report.html
 ```
 
 ### 14.6 查看 Trace
@@ -748,9 +781,9 @@ def test_search_response_time(page: Page):
 
 这和老师给的报告内容要求是对齐的。
 
-[1]: https://playwright.dev/python/docs/intro?utm_source=chatgpt.com "Installation | Playwright Python"
-[2]: https://docs.astral.sh/uv/?utm_source=chatgpt.com "uv"
-[3]: https://docs.astral.sh/uv/guides/projects/?utm_source=chatgpt.com "Working on projects | uv"
-[4]: https://pypi.org/project/pytest-playwright/?utm_source=chatgpt.com "pytest-playwright"
-[5]: https://playwright.dev/python/docs/trace-viewer-intro?utm_source=chatgpt.com "Trace viewer | Playwright Python"
-[6]: https://playwright.dev/python/docs/test-runners?utm_source=chatgpt.com "Pytest Plugin Reference | Playwright Python"
+[1]: https://playwright.dev/python/docs/intro "Installation | Playwright Python"
+[2]: https://docs.astral.sh/uv/ "uv"
+[3]: https://docs.astral.sh/uv/guides/projects/ "Working on projects | uv"
+[4]: https://pypi.org/project/pytest-playwright/ "pytest-playwright"
+[5]: https://playwright.dev/python/docs/trace-viewer-intro "Trace viewer | Playwright Python"
+[6]: https://playwright.dev/python/docs/test-runners "Pytest Plugin Reference | Playwright Python"
