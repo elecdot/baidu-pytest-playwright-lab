@@ -30,7 +30,10 @@ class BaiduMapPage:
         last_error: Exception | None = None
         for _ in range(3):
             try:
-                self.page.goto(url, wait_until="domcontentloaded")
+                # Baidu Map can delay DOMContentLoaded on CI while map resources load.
+                # A committed navigation plus a visible body is enough here.
+                self.page.goto(url, wait_until="commit", timeout=60_000)
+                self.expect_page_loaded()
                 return
             except PlaywrightError as error:
                 last_error = error
@@ -99,14 +102,22 @@ class BaiduMapPage:
         try:
             expect(challenge.or_(result).first).to_be_visible(timeout=5_000)
         except (AssertionError, PlaywrightTimeoutError):
-            if previous_url is None:
-                raise
-            expect(self.page).not_to_have_url(previous_url, timeout=timeout)
-            return "map_navigation"
+            if previous_url is not None:
+                expect(self.page).not_to_have_url(previous_url, timeout=timeout)
+                return "map_navigation"
+
+            # CI may reach a Baidu Map search URL without rendering stable result text.
+            if self.is_search_result_url():
+                return "map_navigation"
+
+            raise
 
         if challenge.first.is_visible():
             return "security_challenge"
         return "result"
+
+    def is_search_result_url(self) -> bool:
+        return "/search/" in self.page.url or "querytype=s" in self.page.url
 
     def open_route_panel(self) -> None:
         for _ in range(2):

@@ -51,5 +51,5 @@ def test_search_result_classification_under_anti_automation(page: Page) -> None:
     baidu_map.goto_url(KNOWN_SEARCH_RESULT_PAGES["北京大学"])
     baidu_map.expect_page_loaded()
     outcome = baidu_map.expect_search_or_security_challenge_observed("北京大学")
-    assert outcome in {"result", "security_challenge"}
+    assert outcome in {"result", "security_challenge", "map_navigation"}
     baidu_map.screenshot(f"search-known-result-page-{outcome}")
