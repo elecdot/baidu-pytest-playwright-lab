@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Ruff and Playwright E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+
+      - name: Run Ruff
+        run: uv run --frozen ruff check .
+
+      - name: Install Chromium for Playwright
+        run: uv run --frozen playwright install chromium --with-deps
+
+      - name: Run pytest E2E suite
+        run: uv run --frozen pytest
+
+      - name: Upload test artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-test-artifacts
+          # Keep the pytest-html report and Playwright traces/screenshots/videos
+          # available for diagnosing public-site E2E failures.
+          path: |
+            reports/report.html
+            test-results/
+          retention-days: 14

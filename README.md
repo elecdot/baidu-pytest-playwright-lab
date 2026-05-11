@@ -61,6 +61,32 @@ See each directory-level `README.md` before adding files in that directory.
 - [roadmap.md](roadmap.md) - Staged implementation roadmap from smoke loop to
   final experiment report.
 
+## Continuous Integration
+
+GitHub Actions runs the full CI gate on every pull request, every push to
+`main`, and manual `workflow_dispatch` runs. The workflow uses Python `3.12`,
+`uv run --frozen`, Ruff, and the Chromium-only Playwright pytest suite defined
+in `pyproject.toml`.
+
+Local equivalents:
+
+```bash
+uv run --frozen ruff check .
+uv run --frozen playwright install chromium --with-deps
+uv run --frozen pytest
+```
+
+Sandboxed agents can use the workspace-safe wrappers:
+
+```bash
+just agent-ruff
+just agent-test
+```
+
+Each CI run uploads `reports/report.html` and `test-results/` as the
+`playwright-test-artifacts` artifact for HTML report, trace, screenshot, and
+video review.
+
 ## Open Loops
 
 - [x] Implement the first Page Object in `pages/baidu_map_page.py`.
