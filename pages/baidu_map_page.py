@@ -42,8 +42,8 @@ class BaiduMapPage:
         if last_error is not None:
             raise last_error
 
-    def expect_page_loaded(self) -> None:
-        expect(self.page.locator("body")).to_be_visible()
+    def expect_page_loaded(self, timeout: int = 60_000) -> None:
+        expect(self.page.locator("body")).to_be_visible(timeout=timeout)
 
     def search(self, keyword: str) -> str:
         previous_url = self.page.url
@@ -204,4 +204,15 @@ class BaiduMapPage:
     def screenshot(self, name: str) -> None:
         artifact_dir = Path("test-results")
         artifact_dir.mkdir(exist_ok=True)
-        self.page.screenshot(path=artifact_dir / f"{name}.png", full_page=True)
+        try:
+            self.page.screenshot(
+                path=artifact_dir / f"{name}.png",
+                full_page=True,
+                timeout=10_000,
+            )
+        except PlaywrightTimeoutError as error:
+            # Evidence screenshots should not fail an already-asserted test in CI.
+            (artifact_dir / f"{name}-screenshot-skipped.txt").write_text(
+                f"Screenshot skipped after timeout: {error}\n",
+                encoding="utf-8",
+            )
