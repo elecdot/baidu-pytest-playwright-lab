@@ -30,7 +30,8 @@ jobs:
           python-version: "3.12"
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v8
+        # setup-uv publishes v8.x tags, but not a floating v8 major tag.
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: true
 
